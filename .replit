@@ -1,0 +1,43 @@
+# Replit configuration for Observatory.
+#
+# Run: starts the Vite dev server (HMR, friendly for iterating in Replit's editor).
+# Deployment: builds a static bundle and serves it with vite preview.
+
+run = "cd web && npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+entrypoint = "web/src/main.tsx"
+modules = ["nodejs-20"]
+hidden = [".git", "node_modules", "ios", "dist"]
+
+[nix]
+channel = "stable-23_11"
+
+[env]
+NODE_ENV = "development"
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix", "web/package.json"]
+
+[unitTest]
+language = "nodejs"
+
+[languages.javascript]
+pattern = "**/*.{js,jsx,ts,tsx}"
+[languages.javascript.languageServer]
+start = ["typescript-language-server", "--stdio"]
+
+# How Replit forwards your dev/preview port externally.
+[[ports]]
+localPort = 5173
+externalPort = 80
+exposeLocalhost = true
+
+[[ports]]
+localPort = 4173
+externalPort = 3000
+
+# Replit Deployments — production build + static preview.
+[deployment]
+deploymentTarget = "static"
+publicDir = "web/dist"
+build = ["sh", "-c", "cd web && npm install --no-audit --no-fund && npm run build"]
+run = ["sh", "-c", "cd web && npm run preview -- --host 0.0.0.0 --port $PORT"]

@@ -1,0 +1,52 @@
+/* Observatory — global styles.
+   Keep this file boringly small.  All chrome lives in component styles. */
+
+:root {
+  --bg-deep: #08090C;
+  --bg-top: #0E1015;
+  --bg-bottom: #050608;
+  --text-primary: #F5F5F7;
+  --text-secondary: #A1A1AA;
+  --glow-warm: #FFB37C;
+  --glow-cool: #7CC4FF;
+  --divider: #1F2024;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  background: var(--bg-deep);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  color-scheme: dark;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+canvas { display: block; touch-action: none; }
+
+.observatory-root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  /* iOS safe areas */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Renderer reads its own reduced-motion flag — this is just for chrome animations */
+  .observatory-chrome * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
