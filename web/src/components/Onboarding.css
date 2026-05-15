@@ -156,6 +156,54 @@
   color: #E8E0FA;
 }
 
+/* --- Magic prompt block (the thing you copy and paste into OpenClaw) --- */
+.ob-prompt-block {
+  position: relative;
+  background: rgba(0, 0, 0, 0.50);
+  border: 1px solid rgba(212, 191, 253, 0.20);
+  border-radius: 14px;
+  padding: 16px 18px;
+  text-align: left;
+  margin: 12px 0 4px;
+  max-height: 38vh;
+  overflow: auto;
+  box-shadow: 0 4px 24px rgba(212, 191, 253, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.ob-prompt-block pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #E8E0FA;
+  /* leave room for the floating copy chip */
+  padding-right: 92px;
+  letter-spacing: -0.005em;
+}
+.ob-prompt-copy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(212, 191, 253, 0.95), rgba(168, 240, 224, 0.92));
+  color: #1a1530;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 9px;
+  padding: 7px 11px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(212, 191, 253, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease;
+}
+.ob-prompt-copy:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.ob-prompt-copy:active { transform: translateY(0); filter: brightness(0.95); }
+.ob-prompt-copy svg { width: 12px; height: 12px; }
+
 .onboarding-title {
   margin: 0;
   font-size: clamp(28px, 4.6vw, 44px);

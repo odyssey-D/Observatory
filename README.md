@@ -32,31 +32,33 @@ First-run sheet offers three paths:
 
 ### Pair with OpenClaw
 
-Observatory ships as a **native OpenClaw plugin**. One install, one command,
-and `openclaw observatory connect` is a real sub-command of the `openclaw` CLI.
+**For the end user:** they don't run anything themselves.
+
+1. Open Observatory → **Pair with OpenClaw**.
+2. Tap **Copy**.
+3. Paste into OpenClaw — Telegram, the CLI, wherever they chat with it.
+4. OpenClaw installs the plugin if needed, runs `openclaw observatory connect`,
+   and replies with an `observatory://…` link.
+5. Tap the link on iOS (or paste it back into Observatory on the web).
+
+The prompt is a self-contained natural-language instruction that any
+LLM-driven agent runtime can execute. It lives at
+[`web/src/lib/pairingPrompt.ts`](web/src/lib/pairingPrompt.ts) — edit it
+there to customise the install method, gateway flags, or wording.
+
+**For power users who want to do it by hand:**
 
 ```bash
-# On the machine running OpenClaw, from a checkout of this repo:
-openclaw plugins install plugins/openclaw-observatory
-openclaw gateway stop && openclaw gateway run     # reload so the new command registers
-openclaw observatory connect                       # prints the pair URL
+openclaw plugins install plugins/openclaw-observatory   # from a repo checkout
+openclaw gateway stop && openclaw gateway run
+openclaw observatory connect --host my.lan --tls
 ```
 
-`connect` (alias: `pair`, `link`) supports:
+`connect` aliases: `pair`, `link`. The plugin lives at
+[`plugins/openclaw-observatory/`](plugins/openclaw-observatory) — see its
+[README](plugins/openclaw-observatory/README.md) for full flag reference.
 
-```bash
-openclaw observatory connect --host my.lan --port 18789 --tls
-openclaw observatory connect --label "Prod gateway" --no-qr
-```
-
-The plugin lives at [`plugins/openclaw-observatory/`](plugins/openclaw-observatory) —
-see its [README](plugins/openclaw-observatory/README.md) for full flag reference
-and trust-model notes.
-
-**Standalone fallback.** If you don't want to install the plugin (or are running
-Observatory before paired with an OpenClaw build that supports it), there's a
-zero-install shell helper at [`bin/openclaw-observatory`](bin/openclaw-observatory)
-that prints the same pair URL:
+**Standalone shell fallback** (no OpenClaw required at all):
 
 ```bash
 ./bin/openclaw-observatory connect

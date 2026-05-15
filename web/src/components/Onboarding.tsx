@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { parsePairingInput } from '../lib/pairing';
+import { PAIRING_PROMPT } from '../lib/pairingPrompt';
 import './Onboarding.css';
 
 type Mode = 'home' | 'openclaw' | 'paste';
@@ -94,12 +95,10 @@ function Home({ onPickOpenClaw, onPickPaste, onDemo, busy }: { onPickOpenClaw: (
 
 function OpenClawPair({ onBack, onPaired, busy, setError }: { onBack: () => void; onPaired: (deeplink: string) => void; busy: boolean; error: string | null; setError: (e: string | null) => void }) {
   const [value, setValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
 
   const submit = () => {
     const parsed = parsePairingInput(value);
-    if (!parsed) { setError('That doesn\'t look like a pairing URL.'); return; }
+    if (!parsed) { setError('That doesn\'t look like a pairing link yet.'); return; }
     onPaired(value);
   };
 
@@ -107,16 +106,20 @@ function OpenClawPair({ onBack, onPaired, busy, setError }: { onBack: () => void
     <>
       <button className="ob-back" onClick={onBack} aria-label="Back">‹ Back</button>
       <h1 className="onboarding-title">Pair with OpenClaw</h1>
-      <p className="onboarding-sub">One-time install. Then one command. Then you're in.</p>
-      <CodeBlock>$ openclaw plugins install plugins/openclaw-observatory</CodeBlock>
-      <CodeBlock>$ openclaw observatory connect</CodeBlock>
-      <p className="onboarding-sub-faint">
-        The command prints a one-time pair link. Paste it below — or, on iOS, tap the link to open Observatory directly.
-        Don't want to install a plugin? <code className="ob-inline-code">./bin/openclaw-observatory connect</code> does the same job.
+      <p className="onboarding-sub">
+        Copy this prompt and paste it into OpenClaw — wherever you chat with it (Telegram, terminal, anywhere).
+        It'll reply with a link.
       </p>
+
+      <PromptBlock prompt={PAIRING_PROMPT} />
+
+      <p className="onboarding-sub-faint">
+        On iPhone, just tap the link OpenClaw sends — Observatory opens connected.
+        Anywhere else, paste the link here:
+      </p>
+
       <form className="onboarding-form" onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <input
-          ref={inputRef}
           className="onboarding-input"
           type="text"
           inputMode="url"
@@ -126,16 +129,36 @@ function OpenClawPair({ onBack, onPaired, busy, setError }: { onBack: () => void
           placeholder="observatory://connect?ws=…"
           value={value}
           onChange={(e) => { setValue(e.target.value); setError(null); }}
-          aria-label="Pairing URL"
+          aria-label="Pairing link"
         />
         <button className="onboarding-button" type="submit" disabled={busy || !value.trim()} aria-busy={busy}>
           {busy ? 'Connecting…' : 'Connect'}
         </button>
       </form>
+
       <p className="onboarding-trust">
-        <ShieldIcon /> Bearer token in URL stays in this app. Observatory never persists tokens to disk.
+        <ShieldIcon /> The link contains a bearer token. Observatory never stores it.
       </p>
     </>
+  );
+}
+
+function PromptBlock({ prompt }: { prompt: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1_800);
+    } catch { /* ignore */ }
+  };
+  return (
+    <div className="ob-prompt-block" aria-label="OpenClaw pairing prompt">
+      <pre><code>{prompt}</code></pre>
+      <button className="ob-prompt-copy" onClick={copy} aria-label="Copy prompt">
+        {copied ? <><CheckIcon /><span>Copied</span></> : <><CopyIcon /><span>Copy</span></>}
+      </button>
+    </div>
   );
 }
 
@@ -178,27 +201,6 @@ function PasteUrl({ onBack, onSubmit, busy, setError }: { onBack: () => void; on
 }
 
 /* ---------------------- bits & pieces ---------------------- */
-
-function CodeBlock({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLPreElement>(null);
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    const text = ref.current?.textContent ?? '';
-    try {
-      await navigator.clipboard.writeText(text.replace(/^\$ /, ''));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1_200);
-    } catch { /* ignore */ }
-  };
-  return (
-    <div className="ob-code">
-      <pre ref={ref}><code>{children}</code></pre>
-      <button className="ob-copy" onClick={copy} aria-label="Copy command">
-        {copied ? <CheckIcon /> : <CopyIcon />}
-      </button>
-    </div>
-  );
-}
 
 function SpanIcon({ children }: { children: React.ReactNode }) { return <span className="ob-option-icon">{children}</span>; }
 
