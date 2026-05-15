@@ -5,14 +5,27 @@ When run, it prints a one-time `observatory://connect?…` pair URL containing
 your gateway's endpoint and a bearer token — paste it into the Observatory app
 (web or iOS) and you're streaming.
 
-## Install (local checkout)
+## Install
+
+**From the latest GitHub release (recommended):**
+
+```bash
+curl -L -o /tmp/observatory-plugin.tgz \
+  https://github.com/odyssey-D/Observatory/releases/latest/download/openclaw-observatory-plugin.tgz
+openclaw plugins install /tmp/observatory-plugin.tgz
+```
+
+**From a local checkout (for development):**
 
 ```bash
 # From the Observatory repo root:
 openclaw plugins install plugins/openclaw-observatory
-# OpenClaw scans openclaw.plugin.json, links the package, and reloads.
-# Restart the gateway so it picks up the new command:
-openclaw gateway stop && openclaw gateway run
+```
+
+Either way, restart the gateway so it picks up the new command:
+
+```bash
+openclaw gateway stop && openclaw gateway run    # or: systemctl restart openclaw-gateway
 
 # Verify it's registered:
 openclaw plugins inspect observatory

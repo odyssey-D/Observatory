@@ -10,11 +10,14 @@
  * a terminal, or wherever the user talks to their agent.
  */
 
+const RELEASE_TARBALL_URL =
+  'https://github.com/odyssey-D/Observatory/releases/latest/download/openclaw-observatory-plugin.tgz';
+
 export const PAIRING_PROMPT = `Hey — set up Observatory pairing for me.
 
 1. If \`openclaw plugins inspect observatory\` errors, install the plugin:
-   git clone https://github.com/odyssey-D/Observatory /tmp/observatory
-   openclaw plugins install /tmp/observatory/plugins/openclaw-observatory
+   curl -L -o /tmp/observatory-plugin.tgz ${RELEASE_TARBALL_URL}
+   openclaw plugins install /tmp/observatory-plugin.tgz
 
 2. Run: openclaw observatory connect --host <a LAN or Tailscale IP my phone can reach>
    (don't use 127.0.0.1 unless I'm on the same machine as you)

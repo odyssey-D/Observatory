@@ -1,7 +1,14 @@
 {
-  "name": "@openclaw/observatory-plugin",
+  "name": "openclaw-observatory-plugin",
   "version": "1.0.0",
   "description": "Observatory pairing plugin for OpenClaw — registers `openclaw observatory connect`.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/odyssey-D/Observatory.git",
+    "directory": "plugins/openclaw-observatory"
+  },
+  "homepage": "https://github.com/odyssey-D/Observatory",
+  "bugs": "https://github.com/odyssey-D/Observatory/issues",
   "main": "dist/index.js",
   "files": [
     "dist",
