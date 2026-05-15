@@ -147,6 +147,15 @@
 }
 .onboarding-trust svg { opacity: 0.7; }
 
+.ob-inline-code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: #E8E0FA;
+}
+
 .onboarding-title {
   margin: 0;
   font-size: clamp(28px, 4.6vw, 44px);

@@ -35,6 +35,15 @@ LABEL="${OPENCLAW_LABEL:-OpenClaw}"
 USE_TLS=0
 VIA_RELAY=0
 
+# Subcommand (optional, for syntactic compatibility with `openclaw observatory <cmd>`).
+# Recognised: connect, pair, link.  All do the same thing — print a pair URL.
+SUBCOMMAND=""
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    connect|pair|link) SUBCOMMAND="$1"; shift ;;
+  esac
+fi
+
 # Parse flags
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -45,11 +54,30 @@ while [[ $# -gt 0 ]]; do
     --via-relay) VIA_RELAY=1; shift ;;
     --label) LABEL="$2"; shift 2 ;;
     -h|--help)
-      sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
+      cat <<'_EOH_'
+openclaw-observatory — print an Observatory pairing URL for the local OpenClaw agent.
+
+Usage:
+  openclaw-observatory [connect|pair|link] [--host HOST] [--port PORT]
+                                           [--path PATH] [--tls] [--label NAME]
+
+Defaults:
+  --host  127.0.0.1
+  --port  18789
+  --path  /events
+
+Env:
+  OPENCLAW_HOST, OPENCLAW_PORT, OPENCLAW_EVENTS_PATH — override defaults.
+  OPENCLAW_TOKEN — reuse an existing bearer token; else a fresh one is minted.
+  OPENCLAW_LABEL — friendly label shown in Observatory.
+_EOH_
       exit 0 ;;
     *) echo "unknown flag: $1" >&2; exit 1 ;;
   esac
 done
+
+# SUBCOMMAND is captured but treated identically — preserved for help-output clarity.
+: "${SUBCOMMAND:=}"
 
 [[ $USE_TLS -eq 1 ]] && SCHEME="wss"
 

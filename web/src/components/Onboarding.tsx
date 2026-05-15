@@ -108,9 +108,10 @@ function OpenClawPair({ onBack, onPaired, busy, setError }: { onBack: () => void
       <button className="ob-back" onClick={onBack} aria-label="Back">‹ Back</button>
       <h1 className="onboarding-title">Pair with OpenClaw</h1>
       <p className="onboarding-sub">In a terminal on the machine running OpenClaw, run:</p>
-      <CodeBlock>$ openclaw observatory connect</CodeBlock>
+      <CodeBlock>$ openclaw-observatory connect</CodeBlock>
       <p className="onboarding-sub-faint">
-        It prints a one-time link. Paste it below — or, on iOS, tap the link to open Observatory directly.
+        It prints a one-time pair link. Paste it below — or, on iOS, tap the link to open Observatory directly.
+        Don't have it on your PATH? Run <code className="ob-inline-code">./bin/openclaw-observatory connect</code> from the Observatory repo.
       </p>
       <form className="onboarding-form" onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <input

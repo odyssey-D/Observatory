@@ -32,13 +32,26 @@ First-run sheet offers three paths:
 
 ### Pair with OpenClaw
 
-On the machine running your agent, run the bundled CLI:
+The pairing CLI is a standalone helper that lives at `bin/openclaw-observatory`.
+On the machine running your agent:
 
 ```bash
-./bin/openclaw-observatory          # uses 127.0.0.1:18789 by default
-# or pick the host/port your stream is listening on:
-./bin/openclaw-observatory --host my.lan --port 18789 --tls
+# from a checkout of this repo
+./bin/openclaw-observatory connect
+
+# or put it on your PATH so you can just call it from anywhere:
+sudo ln -s "$(pwd)/bin/openclaw-observatory" /usr/local/bin/openclaw-observatory
+openclaw-observatory connect
+
+# defaults to 127.0.0.1:18789; override for LAN / TLS:
+openclaw-observatory connect --host my.lan --port 18789 --tls
 ```
+
+> **Note.** Running `openclaw observatory connect` (as a *sub-command* of the
+> `openclaw` CLI) requires an OpenClaw plugin that I haven't shipped yet —
+> OpenClaw's plugin loader needs to know about Observatory. For now, use the
+> standalone `openclaw-observatory connect` form above. Hooking it into
+> OpenClaw's plugin system is tracked in [TODO](#todo).
 
 It prints a one-time pairing link (and, if `qrencode` is installed, a QR
 code for tapping from your phone):
@@ -315,6 +328,18 @@ This is one bake-off submission, so deviations are explicit:
 ```
 
 ---
+
+## TODO
+
+- **OpenClaw plugin.** Native sub-command (`openclaw observatory connect`) needs a
+  plugin manifest that OpenClaw's plugin loader can discover. The standalone CLI at
+  `bin/openclaw-observatory` does the same work today; wrapping it as an OpenClaw
+  plugin is mechanical once the plugin format is documented.
+- **Bonjour/mDNS discovery.** Auto-find OpenClaw agents on the local network so
+  pairing is one-tap on LAN. iOS Info.plist already declares the relevant Bonjour
+  services.
+- **macOS .saver bundle** and **iOS lock-screen widget / Live Activity** —
+  separate Xcode targets, deferred from v1.
 
 ## Licence
 
