@@ -24,9 +24,43 @@ npm install
 npm run dev          # → http://localhost:5173
 ```
 
-First-run sheet appears. Leave the URL blank and tap **Begin** to watch the
-built-in synthetic demo (4 agents, ~5 events/sec). Or paste a stream URL —
-WebSocket, SSE, HTTP-polling, or OpenClaw — and watch real activity.
+First-run sheet offers three paths:
+
+1. **Pair with OpenClaw** — one command in your terminal, paste the link back. See below.
+2. **Paste a stream URL** — WebSocket / SSE / HTTP polling.
+3. **Watch the demo** — 4 synthetic agents, zero config.
+
+### Pair with OpenClaw
+
+On the machine running your agent, run the bundled CLI:
+
+```bash
+./bin/openclaw-observatory          # uses 127.0.0.1:18789 by default
+# or pick the host/port your stream is listening on:
+./bin/openclaw-observatory --host my.lan --port 18789 --tls
+```
+
+It prints a one-time pairing link (and, if `qrencode` is installed, a QR
+code for tapping from your phone):
+
+```
+  endpoint    ws://127.0.0.1:18789/events
+  token       a3f2c1...           (freshly generated)
+
+  paste this into Observatory →
+
+  observatory://connect?ws=ws%3A%2F%2F127.0.0.1%3A18789%2Fevents&token=a3f2c1...&label=OpenClaw
+```
+
+Open Observatory → **Pair with OpenClaw** → paste. Done. On iOS, the
+`observatory://` URL is a registered scheme — tap it and the app opens
+connected.
+
+**The trust model:** the bearer token in the URL gates the stream. Set
+`OPENCLAW_TOKEN=<the printed token>` on your agent side so the server
+requires it. For anything beyond localhost, add `--tls` and put your
+agent behind a TLS-terminating proxy (Caddy, Cloudflare Tunnel, Tailscale
+funnel). Observatory never persists tokens to disk and emits no telemetry.
 
 ### Web (Replit)
 
@@ -144,26 +178,36 @@ just works.
 
 ---
 
-## Visual design tokens
+## Visual design
 
-All design tokens live in `web/src/lib/tokens.ts` and the colour palette is
-locked to the spec (§3.8). Per-agent palettes are assigned by index, then
-golden-ratio hue rotation for agent 5+.
+The renderer goes for *futuristic-pastel galactic graph*: each agent is a
+nucleus surrounded by a fluidly-moving Obsidian-style graph of every tool,
+file, and memory node it has touched recently. Bodies persist tens of
+seconds — the universe of "things this agent has been near" stays visible
+without crowding.
 
 | Token             | Value     |
 | ----------------- | --------- |
-| `bg.deep`         | `#08090C` |
-| `bg.gradient.top` | `#0E1015` |
-| `text.secondary`  | `#A1A1AA` |
-| `glow.warm`       | `#FFB37C` |
-| `glow.cool`       | `#7CC4FF` |
-| Agent 1           | `#FF6B6B` → `#C44545` |
-| Agent 2           | `#4ECDC4` → `#2A9D96` |
-| Agent 3           | `#FFD93D` → `#D4A700` |
-| Agent 4           | `#A78BFA` → `#7C5FE6` |
+| `bg.deep`         | `#0A0B14` |
+| `bg.gradient.top` | `#0F1124` (deep indigo) |
+| `text.secondary`  | `#A6A4B5` |
+| `glow.warm`       | `#FFC4DC` (pastel rose) |
+| `glow.cool`       | `#B4E0FF` (pastel sky) |
+| Agent 1 rose      | `#FFB4C6` → `#A86B7E` |
+| Agent 2 mint      | `#A8F0E0` → `#5E9B91` |
+| Agent 3 butter    | `#FAEBA0` → `#B59F5C` |
+| Agent 4 lavender  | `#D4BFFD` → `#8678C4` |
 
-Motion timings (entries fade-in 800ms cubic ease-out, exits 1200ms, pulses
-700ms, link fade 600ms) match spec §3.6.
+Bodies move with parametric orbits plus per-body radial wander and angular
+variance — same time-deterministic motion across every device, but each
+body feels like its own thing rather than ticking in lock-step.
+
+Tool ↔ file / tool ↔ memory pairs that share a `task_id` are connected
+with a thin glowing line that fades with the destination body's age. This
+is the "Obsidian graph" cue without the visual noise of a forest of edges.
+
+Motion timings (entries 800ms cubic ease-out, exits 1200ms, pulses 700ms,
+link fade with body age) match spec §3.6.
 
 ---
 

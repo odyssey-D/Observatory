@@ -65,13 +65,20 @@ targets:
         UIViewControllerBasedStatusBarAppearance: false
         UIUserInterfaceStyle: Dark
         ITSAppUsesNonExemptEncryption: false
-        # Network for connecting to LAN/local OpenClaw gateways (no global insecure block needed in v1)
+        # Network for connecting to LAN/local OpenClaw gateways
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSLocalNetworkUsageDescription: "Observatory connects to your local OpenClaw gateway and other agent endpoints on your network."
         NSBonjourServices:
           - _http._tcp
           - _ws._tcp
+        # URL scheme so `observatory://connect?…` opens this app directly
+        # (and the openclaw-observatory CLI's printed link is tappable on iOS).
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.openclaw.observatory.pair
+            CFBundleTypeRole: Viewer
+            CFBundleURLSchemes:
+              - observatory
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.openclaw.observatory

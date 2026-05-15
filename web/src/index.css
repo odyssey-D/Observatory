@@ -2,14 +2,15 @@
    Keep this file boringly small.  All chrome lives in component styles. */
 
 :root {
-  --bg-deep: #08090C;
-  --bg-top: #0E1015;
-  --bg-bottom: #050608;
-  --text-primary: #F5F5F7;
-  --text-secondary: #A1A1AA;
-  --glow-warm: #FFB37C;
-  --glow-cool: #7CC4FF;
-  --divider: #1F2024;
+  --bg-deep: #0A0B14;
+  --bg-top: #0F1124;
+  --bg-bottom: #06070F;
+  --text-primary: #F2EEF7;
+  --text-secondary: #A6A4B5;
+  --glow-warm: #FFC4DC;   /* pastel rose */
+  --glow-cool: #B4E0FF;   /* pastel sky */
+  --accent: #D4BFFD;      /* pastel lavender */
+  --divider: #1B1D2A;
 }
 
 * { box-sizing: border-box; }

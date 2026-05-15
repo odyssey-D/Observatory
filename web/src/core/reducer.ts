@@ -143,9 +143,15 @@ export function reduce(state: ObservatoryState, event: AgentEvent, now: number):
     case 'tool.result': {
       const tool = event.payload.tool_name ?? 'tool';
       const bodyId = `tool::${tool}::${event.payload.task_id ?? event.id}`;
-      markRetiring(agent, (b) => b.id === bodyId, eventMs);
-      // ANY tool body for this tool name → retire too (for adapters that don't pass task_id)
-      markRetiring(agent, (b) => b.class === 'tool' && b.label === tool && !b.retiringAt, eventMs);
+      // Don't retire — let the body persist as a "recently used tool" node.
+      // Flip status to ok / error so the colourisation updates.
+      const status = event.payload.status === 'error' ? 'error' : 'ok';
+      const body = agent.bodies.find((b) => b.id === bodyId)
+        ?? agent.bodies.find((b) => b.class === 'tool' && b.label === tool && b.status === 'in_progress');
+      if (body) {
+        body.status = status;
+        body.lastEventAt = eventMs;
+      }
       break;
     }
     case 'file.read':
@@ -153,6 +159,10 @@ export function reduce(state: ObservatoryState, event: AgentEvent, now: number):
       const path = event.payload.file_path ?? 'file';
       const filename = path.split('/').pop() ?? path;
       const bodyId = `file::${path}`;
+      // If this came from a known tool invocation, draw an edge to that tool.
+      const sourceBodyId = event.payload.task_id
+        ? agent.bodies.find((b) => b.class === 'tool' && b.id.endsWith(`::${event.payload.task_id}`))?.id
+        : undefined;
       pushBody(agent, {
         id: bodyId,
         class: 'file',
@@ -161,15 +171,18 @@ export function reduce(state: ObservatoryState, event: AgentEvent, now: number):
         createdAt: eventMs,
         lastEventAt: eventMs,
         status: event.type === 'file.write' ? 'in_progress' : 'ok',
+        sourceBodyId,
       });
-      // Auto-retire after 4s of no further mention
-      scheduleRetire(agent, bodyId, eventMs, 4_000);
       recordPulse(agent, event.id, eventMs);
       break;
     }
     case 'memory.query': {
       const key = event.payload.memory_key ?? 'memory';
       const bodyId = `mem::${key}`;
+      // Link memory queries to the most recent in-progress tool, if any.
+      const sourceBodyId = agent.bodies
+        .filter((b) => b.class === 'tool' && b.status === 'in_progress')
+        .sort((a, b) => b.lastEventAt - a.lastEventAt)[0]?.id;
       pushBody(agent, {
         id: bodyId,
         class: 'memory',
@@ -177,8 +190,8 @@ export function reduce(state: ObservatoryState, event: AgentEvent, now: number):
         createdAt: eventMs,
         lastEventAt: eventMs,
         status: 'ok',
+        sourceBodyId,
       });
-      scheduleRetire(agent, bodyId, eventMs, 3_500);
       recordPulse(agent, event.id, eventMs);
       break;
     }
@@ -241,20 +254,20 @@ function scheduleRetire(agent: AgentState, bodyId: string, now: number, afterMs:
   void afterMs;
 }
 
-/** Called by the animation loop on every frame — applies time-based retirement, prunes. */
+/** Called by the animation loop on every frame — applies time-based retirement, prunes.
+ *  Retire windows are intentionally long so the graph fills out and feels alive — a
+ *  file or memory node touched 30s ago is still part of the agent's recent universe. */
 export function tick(state: ObservatoryState, now: number): ObservatoryState {
   for (const agent of Object.values(state.agents)) {
     for (const body of agent.bodies) {
       if (body.retiringAt) continue;
-      // Idle retire rules per class
       const inactiveMs = now - body.lastEventAt;
-      if (body.class === 'file' && inactiveMs > 4_000) body.retiringAt = now;
-      else if (body.class === 'memory' && inactiveMs > 3_500) body.retiringAt = now;
-      else if (body.class === 'tool' && inactiveMs > 6_000) body.retiringAt = now;
-      else if (body.class === 'subtask' && inactiveMs > 8_000) body.retiringAt = now;
+      if (body.class === 'file' && inactiveMs > 45_000) body.retiringAt = now;
+      else if (body.class === 'memory' && inactiveMs > 35_000) body.retiringAt = now;
+      else if (body.class === 'tool' && inactiveMs > 18_000) body.retiringAt = now;
+      else if (body.class === 'subtask' && inactiveMs > 22_000) body.retiringAt = now;
     }
     pruneRetired(agent, now);
-    // Trim pulse history
     const cutoff = now - PULSE_HISTORY_WINDOW_MS;
     agent.pulses = agent.pulses.filter((p) => p.at >= cutoff);
   }

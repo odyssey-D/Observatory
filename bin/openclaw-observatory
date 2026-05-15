@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# openclaw-observatory — print an Observatory pairing URL for the local OpenClaw agent.
+#
+# What this does:
+#   1. Figures out where your OpenClaw event stream is listening (from env vars,
+#      config file, or sensible defaults: 127.0.0.1:18789).
+#   2. Mints (or reads) a bearer token.  By default a fresh random token is
+#      generated and printed — you copy it into OpenClaw's config to require it.
+#      With OPENCLAW_TOKEN already set, reuses that.
+#   3. Computes the SHA-256 fingerprint of the cert (if the endpoint is wss://).
+#   4. Prints a one-line `observatory://connect?…` URL for you to:
+#         a. Paste into Observatory's Pair screen, OR
+#         b. Tap (on iOS) to open Observatory directly via the URL scheme.
+#      Also prints a terminal QR code (if `qrencode` is installed) so you can
+#      scan it from a phone.
+#
+# Usage:
+#   openclaw-observatory                       # use defaults (LAN, no TLS, new token)
+#   openclaw-observatory --host my.lan --port 18789
+#   openclaw-observatory --tls                 # generate wss:// URL (assumes openclaw has TLS configured)
+#   OBSERVATORY_RELAY=wss://relay.example/ws openclaw-observatory --via-relay
+#
+# Trust model (in brief):
+#   • The bearer token gates ALL access to the event stream — keep it secret.
+#   • TLS is recommended for anything beyond localhost.
+#   • The pairing URL itself contains the token; treat it like a password.
+
+set -euo pipefail
+
+HOST="${OPENCLAW_HOST:-127.0.0.1}"
+PORT="${OPENCLAW_PORT:-18789}"
+PATH_SUFFIX="${OPENCLAW_EVENTS_PATH:-/events}"
+SCHEME="ws"
+LABEL="${OPENCLAW_LABEL:-OpenClaw}"
+USE_TLS=0
+VIA_RELAY=0
+
+# Parse flags
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --host) HOST="$2"; shift 2 ;;
+    --port) PORT="$2"; shift 2 ;;
+    --path) PATH_SUFFIX="$2"; shift 2 ;;
+    --tls)  USE_TLS=1; shift ;;
+    --via-relay) VIA_RELAY=1; shift ;;
+    --label) LABEL="$2"; shift 2 ;;
+    -h|--help)
+      sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0 ;;
+    *) echo "unknown flag: $1" >&2; exit 1 ;;
+  esac
+done
+
+[[ $USE_TLS -eq 1 ]] && SCHEME="wss"
+
+# Token: reuse OPENCLAW_TOKEN if set; else mint a fresh one and tell the user.
+if [[ -n "${OPENCLAW_TOKEN:-}" ]]; then
+  TOKEN="$OPENCLAW_TOKEN"
+  TOKEN_SOURCE="reused from OPENCLAW_TOKEN"
+else
+  if command -v openssl >/dev/null 2>&1; then
+    TOKEN="$(openssl rand -hex 24)"
+  else
+    # Fallback — /dev/urandom + hexdump.  Less elegant but works everywhere.
+    TOKEN="$(head -c 24 /dev/urandom | xxd -p | tr -d '\n')"
+  fi
+  TOKEN_SOURCE="freshly generated"
+fi
+
+# Fingerprint (only meaningful for TLS)
+FINGERPRINT=""
+if [[ $USE_TLS -eq 1 ]]; then
+  if command -v openssl >/dev/null 2>&1; then
+    FP=$(echo | openssl s_client -connect "${HOST}:${PORT}" -servername "${HOST}" 2>/dev/null \
+         | openssl x509 -noout -fingerprint -sha256 2>/dev/null \
+         | awk -F= '{print $2}' | tr -d ':' || true)
+    FINGERPRINT="$FP"
+  fi
+fi
+
+WS_URL="${SCHEME}://${HOST}:${PORT}${PATH_SUFFIX}"
+
+# Build the deeplink
+urlencode() { python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1" 2>/dev/null \
+              || node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$1" ; }
+
+WS_ENC=$(urlencode "$WS_URL")
+TOK_ENC=$(urlencode "$TOKEN")
+LBL_ENC=$(urlencode "$LABEL")
+
+DEEPLINK="observatory://connect?ws=${WS_ENC}&token=${TOK_ENC}&label=${LBL_ENC}"
+[[ -n "$FINGERPRINT" ]] && DEEPLINK="${DEEPLINK}&fingerprint=${FINGERPRINT}"
+
+# Pretty output
+cyan() { printf "\033[1;36m%s\033[0m" "$*"; }
+pink() { printf "\033[1;35m%s\033[0m" "$*"; }
+dim()  { printf "\033[2m%s\033[0m" "$*"; }
+
+cat <<EOF
+
+  $(pink "Observatory")  ·  pair link ready
+
+  endpoint    $(cyan "$WS_URL")
+  token       $(cyan "$TOKEN")    $(dim "($TOKEN_SOURCE)")
+$( [[ -n "$FINGERPRINT" ]] && printf "  fingerprint %s\n" "$(cyan "$FINGERPRINT")" )
+
+  paste this into Observatory →
+
+EOF
+
+printf "  %s\n\n" "$(cyan "$DEEPLINK")"
+
+if command -v qrencode >/dev/null 2>&1; then
+  echo "$DEEPLINK" | qrencode -t ANSI -m 1
+  echo
+fi
+
+if [[ "$TOKEN_SOURCE" == "freshly generated" ]]; then
+  cat <<EOF
+  $(dim "set this on the OpenClaw side so the stream requires the token:")
+  $(dim "  export OPENCLAW_TOKEN=$TOKEN")
+
+EOF
+fi

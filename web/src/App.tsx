@@ -4,6 +4,7 @@ import { Onboarding } from './components/Onboarding';
 import { Chrome } from './components/Chrome';
 import { makeAdapterFromEndpoint, makeSyntheticAdapter, type AgentAdapter } from './adapters';
 import { useObservatory } from './store/observatory';
+import { parsePairingInput } from './lib/pairing';
 
 export default function App() {
   const setConnection = useObservatory((s) => s.setConnection);
@@ -27,12 +28,22 @@ export default function App() {
     return () => m.removeEventListener?.('change', cb);
   }, [setReducedMotion]);
 
-  const connect = useCallback(async (endpoint: string, token?: string) => {
+  const connect = useCallback(async (input: string, token?: string) => {
     setConnection('connecting');
+    // Accept either a plain stream URL, an `observatory://` deeplink, or 'demo'.
+    let endpoint = input;
+    let resolvedToken = token;
+    if (input !== 'demo') {
+      const parsed = parsePairingInput(input);
+      if (parsed) {
+        endpoint = parsed.endpoint;
+        resolvedToken = parsed.token ?? token;
+      }
+    }
     try {
-      const adapter = await makeAdapterFromEndpoint(endpoint, { token });
+      const adapter = await makeAdapterFromEndpoint(endpoint, { token: resolvedToken });
       adapterRef.current = adapter;
-      await adapter.connect({ endpoint, token });
+      await adapter.connect({ endpoint, token: resolvedToken });
       subRef.current?.close();
       subRef.current = adapter.subscribe((evt) => ingest(evt));
       setConnection('connected', adapter.label);
@@ -55,6 +66,14 @@ export default function App() {
     subRef.current?.close();
     adapterRef.current?.disconnect();
   }, []);
+
+  // Expose a handler the native iOS shell calls when an observatory:// URL
+  // arrives while the app is already running.
+  useEffect(() => {
+    (window as unknown as { __observatoryPair?: (url: string) => void }).__observatoryPair = (url) => {
+      void connect(url);
+    };
+  }, [connect]);
 
   // Keyboard shortcuts: Cmd+Ctrl+S → screensaver toggle, Esc → clear focus / exit screensaver
   useEffect(() => {
