@@ -32,26 +32,35 @@ First-run sheet offers three paths:
 
 ### Pair with OpenClaw
 
-The pairing CLI is a standalone helper that lives at `bin/openclaw-observatory`.
-On the machine running your agent:
+Observatory ships as a **native OpenClaw plugin**. One install, one command,
+and `openclaw observatory connect` is a real sub-command of the `openclaw` CLI.
 
 ```bash
-# from a checkout of this repo
-./bin/openclaw-observatory connect
-
-# or put it on your PATH so you can just call it from anywhere:
-sudo ln -s "$(pwd)/bin/openclaw-observatory" /usr/local/bin/openclaw-observatory
-openclaw-observatory connect
-
-# defaults to 127.0.0.1:18789; override for LAN / TLS:
-openclaw-observatory connect --host my.lan --port 18789 --tls
+# On the machine running OpenClaw, from a checkout of this repo:
+openclaw plugins install plugins/openclaw-observatory
+openclaw gateway stop && openclaw gateway run     # reload so the new command registers
+openclaw observatory connect                       # prints the pair URL
 ```
 
-> **Note.** Running `openclaw observatory connect` (as a *sub-command* of the
-> `openclaw` CLI) requires an OpenClaw plugin that I haven't shipped yet —
-> OpenClaw's plugin loader needs to know about Observatory. For now, use the
-> standalone `openclaw-observatory connect` form above. Hooking it into
-> OpenClaw's plugin system is tracked in [TODO](#todo).
+`connect` (alias: `pair`, `link`) supports:
+
+```bash
+openclaw observatory connect --host my.lan --port 18789 --tls
+openclaw observatory connect --label "Prod gateway" --no-qr
+```
+
+The plugin lives at [`plugins/openclaw-observatory/`](plugins/openclaw-observatory) —
+see its [README](plugins/openclaw-observatory/README.md) for full flag reference
+and trust-model notes.
+
+**Standalone fallback.** If you don't want to install the plugin (or are running
+Observatory before paired with an OpenClaw build that supports it), there's a
+zero-install shell helper at [`bin/openclaw-observatory`](bin/openclaw-observatory)
+that prints the same pair URL:
+
+```bash
+./bin/openclaw-observatory connect
+```
 
 It prints a one-time pairing link (and, if `qrencode` is installed, a QR
 code for tapping from your phone):
@@ -331,15 +340,14 @@ This is one bake-off submission, so deviations are explicit:
 
 ## TODO
 
-- **OpenClaw plugin.** Native sub-command (`openclaw observatory connect`) needs a
-  plugin manifest that OpenClaw's plugin loader can discover. The standalone CLI at
-  `bin/openclaw-observatory` does the same work today; wrapping it as an OpenClaw
-  plugin is mechanical once the plugin format is documented.
 - **Bonjour/mDNS discovery.** Auto-find OpenClaw agents on the local network so
   pairing is one-tap on LAN. iOS Info.plist already declares the relevant Bonjour
   services.
 - **macOS .saver bundle** and **iOS lock-screen widget / Live Activity** —
   separate Xcode targets, deferred from v1.
+- **Publish `@openclaw/observatory-plugin` to npm.** Today the plugin installs
+  from a local path. Publishing makes the install `openclaw plugins install
+  @openclaw/observatory-plugin`.
 
 ## Licence
 

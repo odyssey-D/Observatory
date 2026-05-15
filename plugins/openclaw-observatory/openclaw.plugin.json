@@ -1,0 +1,46 @@
+{
+  "id": "observatory",
+  "name": "Observatory",
+  "description": "Pair this OpenClaw gateway with the Observatory viewer (web / iOS).",
+  "version": "1.0.0",
+  "commandAliases": [
+    {
+      "name": "observatory",
+      "kind": "cli",
+      "cliCommand": "observatory"
+    }
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "defaultHost": {
+        "type": "string",
+        "description": "Hostname or LAN IP for the gateway. Defaults to 127.0.0.1.",
+        "default": "127.0.0.1"
+      },
+      "defaultPort": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535,
+        "description": "Gateway port. Defaults to 18789.",
+        "default": 18789
+      },
+      "eventsPath": {
+        "type": "string",
+        "description": "WebSocket path on the gateway that emits AgentEvent-shaped messages.",
+        "default": "/events"
+      },
+      "label": {
+        "type": "string",
+        "description": "Friendly label shown in Observatory's status pill.",
+        "default": "OpenClaw"
+      },
+      "tls": {
+        "type": "boolean",
+        "description": "Generate wss:// pair URLs by default. Requires OpenClaw to be behind a TLS-terminating proxy.",
+        "default": false
+      }
+    }
+  }
+}

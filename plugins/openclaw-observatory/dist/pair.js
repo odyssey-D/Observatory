@@ -1,0 +1,102 @@
+"use strict";
+/**
+ * Pair-link generator — pure logic, no CLI concerns.
+ *
+ * Mirrors bin/openclaw-observatory in TypeScript.  Used by the OpenClaw plugin
+ * so `openclaw observatory connect` produces the same output as the standalone
+ * shell helper.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.generatePairLink = generatePairLink;
+exports.formatPairOutput = formatPairOutput;
+const crypto_1 = require("crypto");
+const child_process_1 = require("child_process");
+function generatePairLink(opts = {}) {
+    const host = opts.host ?? process.env.OPENCLAW_HOST ?? '127.0.0.1';
+    const port = opts.port ?? Number(process.env.OPENCLAW_PORT ?? 18789);
+    const eventsPath = opts.path ?? process.env.OPENCLAW_EVENTS_PATH ?? '/events';
+    const useTls = opts.tls ?? false;
+    const label = opts.label ?? process.env.OPENCLAW_LABEL ?? 'OpenClaw';
+    const scheme = useTls ? 'wss' : 'ws';
+    let token;
+    let tokenSource;
+    if (opts.token) {
+        token = opts.token;
+        tokenSource = 'env';
+    }
+    else if (process.env.OPENCLAW_TOKEN) {
+        token = process.env.OPENCLAW_TOKEN;
+        tokenSource = 'env';
+    }
+    else {
+        token = (0, crypto_1.randomBytes)(24).toString('hex');
+        tokenSource = 'fresh';
+    }
+    const endpoint = `${scheme}://${host}:${port}${eventsPath}`;
+    const fingerprint = useTls ? maybeFingerprint(host, port) : undefined;
+    const params = new URLSearchParams({
+        ws: endpoint,
+        token,
+        label,
+    });
+    if (fingerprint)
+        params.set('fingerprint', fingerprint);
+    const deeplink = `observatory://connect?${params.toString()}`;
+    const qrAnsi = opts.noQr ? undefined : maybeQrCode(deeplink);
+    return { endpoint, token, tokenSource, fingerprint, deeplink, qrAnsi };
+}
+function maybeFingerprint(host, port) {
+    // openssl s_client | openssl x509 -fingerprint -sha256 — best-effort, skip on any failure.
+    try {
+        const cmd = `echo | openssl s_client -connect ${host}:${port} -servername ${host} 2>/dev/null | openssl x509 -noout -fingerprint -sha256 2>/dev/null`;
+        const out = (0, child_process_1.execSync)(cmd, { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8', timeout: 4000 });
+        const m = out.match(/=([0-9A-F:]+)/i);
+        if (m)
+            return m[1].replace(/:/g, '');
+    }
+    catch { /* ignore */ }
+    return undefined;
+}
+function maybeQrCode(text) {
+    // Render a terminal-friendly QR if qrencode is installed.
+    const check = (0, child_process_1.spawnSync)('which', ['qrencode'], { stdio: ['ignore', 'pipe', 'ignore'] });
+    if (check.status !== 0)
+        return undefined;
+    const out = (0, child_process_1.spawnSync)('qrencode', ['-t', 'ANSI', '-m', '1', text], {
+        stdio: ['pipe', 'pipe', 'ignore'],
+        encoding: 'utf8',
+    });
+    if (out.status !== 0)
+        return undefined;
+    return out.stdout?.toString() ?? undefined;
+}
+/* ----------------------- pretty printer ----------------------- */
+const ANSI = {
+    pink: (s) => `\x1b[1;35m${s}\x1b[0m`,
+    cyan: (s) => `\x1b[1;36m${s}\x1b[0m`,
+    dim: (s) => `\x1b[2m${s}\x1b[0m`,
+};
+function formatPairOutput(r) {
+    const lines = [];
+    lines.push('');
+    lines.push(`  ${ANSI.pink('Observatory')}  ·  pair link ready`);
+    lines.push('');
+    lines.push(`  endpoint    ${ANSI.cyan(r.endpoint)}`);
+    lines.push(`  token       ${ANSI.cyan(r.token)}    ${ANSI.dim(`(${r.tokenSource === 'env' ? 'reused from OPENCLAW_TOKEN' : 'freshly generated'})`)}`);
+    if (r.fingerprint)
+        lines.push(`  fingerprint ${ANSI.cyan(r.fingerprint)}`);
+    lines.push('');
+    lines.push('  paste this into Observatory →');
+    lines.push('');
+    lines.push(`  ${ANSI.cyan(r.deeplink)}`);
+    lines.push('');
+    if (r.qrAnsi) {
+        lines.push(r.qrAnsi);
+    }
+    if (r.tokenSource === 'fresh') {
+        lines.push(`  ${ANSI.dim('set this on the OpenClaw side so the stream requires the token:')}`);
+        lines.push(`  ${ANSI.dim(`  export OPENCLAW_TOKEN=${r.token}`)}`);
+        lines.push('');
+    }
+    return lines.join('\n');
+}

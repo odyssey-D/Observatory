@@ -8,6 +8,11 @@ dist/
 build/
 *.tsbuildinfo
 
+# Exception: OpenClaw plugin ships its compiled JS so `openclaw plugins install <path>`
+# works without a separate build step on the install side.
+!plugins/openclaw-observatory/dist/
+!plugins/openclaw-observatory/dist/*.js
+
 # Editor/OS
 .DS_Store
 .idea/
